@@ -1,0 +1,17 @@
+# Configuración para Render.com
+
+# render.yaml
+services:
+  - type: web
+    name: mcp-server
+    env: docker
+    dockerfile: Dockerfile
+    envVars:
+      - key: PYTHONPATH
+        value: /app
+      - key: LOG_LEVEL
+        value: INFO
+      - key: STREAMLIT_PORT
+        value: 10000
+    healthCheckPath: /
+    plan: free

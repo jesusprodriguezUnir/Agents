@@ -1,0 +1,3 @@
+"""
+Módulo del servidor MCP.
+"""

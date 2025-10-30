@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  mcp-server:
+    build: .
+    ports:
+      - "8000:8000"  # Puerto del servidor MCP
+      - "8501:8501"  # Puerto de Streamlit
+    environment:
+      - LOG_LEVEL=INFO
+      - SERVER_PORT=8000
+      - STREAMLIT_PORT=8501
+      - PYTHONPATH=/app
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Servicio opcional de base de datos
+  # db:
+  #   image: postgres:15
+  #   environment:
+  #     POSTGRES_DB: mcp_server
+  #     POSTGRES_USER: mcpuser
+  #     POSTGRES_PASSWORD: mcppass
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+
+# volumes:
+#   postgres_data:

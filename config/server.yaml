@@ -1,0 +1,48 @@
+# Configuración del servidor MCP
+server:
+  name: "custom-mcp-server"
+  version: "1.0.0"
+  description: "Servidor MCP personalizado con herramientas básicas"
+  
+  # Configuración de red
+  host: "localhost"
+  port: 8000
+  
+  # Configuración de logging
+  logging:
+    level: "INFO"
+    format: "console"  # console o json
+    enable_file_logging: false
+    log_file: "logs/mcp_server.log"
+
+# Configuración de herramientas
+tools:
+  # Herramientas básicas habilitadas por defecto
+  basic_tools:
+    enabled: true
+    tools:
+      - calculator
+      - text_processor
+      - system_info
+      - echo
+  
+  # Directorio para herramientas personalizadas
+  custom_tools_dir: "custom_tools"
+
+# Configuración de la base de datos (futuro)
+database:
+  type: "sqlite"
+  path: "data/mcp_server.db"
+  
+# Configuración de seguridad
+security:
+  enable_auth: false
+  api_key: null
+  allowed_origins: ["*"]
+
+# Configuración del frontend Streamlit
+frontend:
+  enabled: true
+  port: 8501
+  title: "MCP Server Dashboard"
+  theme: "light"

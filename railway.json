@@ -1,0 +1,15 @@
+{
+  "build": {
+    "builder": "DOCKERFILE"
+  },
+  "deploy": {
+    "startCommand": "streamlit run src/frontend/app.py --server.port $PORT --server.address 0.0.0.0",
+    "healthcheckPath": "/",
+    "healthcheckTimeout": 100
+  },
+  "env": {
+    "PYTHONPATH": "/app",
+    "LOG_LEVEL": "INFO",
+    "STREAMLIT_PORT": "$PORT"
+  }
+}
