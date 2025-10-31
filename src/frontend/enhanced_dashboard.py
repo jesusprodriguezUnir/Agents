@@ -751,7 +751,7 @@ def create_pdf_report():
                 html_content += """
         <table class="app-table">
             <tr>
-                <th>Aplicacion</th>
+                <th>Aplicación</th>
                 <th>Componente</th>
                 <th>Tipo</th>
                 <th>Version</th>
