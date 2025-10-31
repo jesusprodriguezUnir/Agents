@@ -348,7 +348,7 @@ def main():
         
         # Generar datos
         generator = RealAppsDataGenerator(db_manager)
-        stats = generator.generate_all_data()
+        generator.generate_all_data()
         
         print(f"\n✅ Base de datos actualizada en: {db_path}")
         print("🌐 Ejecuta el dashboard para ver los nuevos datos:")
