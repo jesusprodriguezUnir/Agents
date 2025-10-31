@@ -4,7 +4,6 @@ Script de prueba para verificar la generación de reportes ejecutivos
 """
 
 import sys
-import os
 import sqlite3
 import pandas as pd
 from datetime import datetime, timedelta
