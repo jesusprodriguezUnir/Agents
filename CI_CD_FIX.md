@@ -110,3 +110,14 @@ El CI/CD ahora debería ejecutarse correctamente con:
 
 *📅 Corregido: 31 de octubre de 2025*  
 *🚀 CI/CD Pipeline - Versión corregida y funcional*
+
+## 🔄 **ACTUALIZACIÓN ADICIONAL**
+
+**Problema detectado:** El paquete `mcp==1.0.0` requiere Python >=3.10, pero el CI estaba probando con Python 3.9.
+
+**Solución aplicada:**
+- ✅ Actualizada matriz de Python a `["3.10", "3.11", "3.12"]`
+- ✅ Removido Python 3.9 (incompatible con mcp 1.0.0)
+- ✅ Documentación actualizada para reflejar requisito Python 3.10+
+
+**Estado final:** CI/CD completamente funcional con versiones de Python compatibles.

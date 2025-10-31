@@ -52,7 +52,7 @@ src/
 - Mock MCP clients using `tests/fixtures/`
 
 ### Environment Setup
-- Python 3.9+ required
+- Python 3.10+ required
 - Virtual environment: `python -m venv venv`
 - Dependencies: `pip install -r requirements.txt`
 - Development setup: `pip install -r requirements-dev.txt`
@@ -64,7 +64,7 @@ src/
 - Use `src/config/loader.py` for configuration access
 
 ### Environment Setup
-- Python 3.9+ required
+- Python 3.10+ required
 - Virtual environment: `python -m venv venv`
 - Dependencies: `pip install -r requirements.txt` (includes mcp, streamlit, pydantic)
 - Development setup: `pip install -r requirements-dev.txt`
