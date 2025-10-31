@@ -754,7 +754,7 @@ def create_pdf_report():
                 <th>Aplicación</th>
                 <th>Componente</th>
                 <th>Tipo</th>
-                <th>Version</th>
+                <th>Versión</th>
                 <th>Fecha Despliegue</th>
                 <th>Desplegado Por</th>
             </tr>"""
