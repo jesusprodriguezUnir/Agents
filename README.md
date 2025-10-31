@@ -97,19 +97,117 @@ pip install -r requirements.txt
 python scripts/generate_hierarchical_apps.py
 ```
 
-### Ejecución
+## ✅ Verificación del Proyecto
 
-#### Dashboard Principal (Recomendado)
+### Lista de Verificación Pre-Ejecución
+
+Antes de ejecutar el proyecto, sigue estos pasos para asegurar que todo esté configurado correctamente:
+
+#### 1. **Verificar Estructura del Proyecto**
+
+```bash
+# Verificar que todos los archivos clave están presentes
+ls -la src/
+ls -la config/
+ls -la data/
+```
+
+#### 2. **Revisar Dependencias**
+
+```bash
+# Verificar requirements.txt
+cat requirements.txt
+# Verificar instalación de dependencias
+pip list | grep -E "(streamlit|mcp|pydantic|plotly)"
+```
+
+#### 3. **Configurar Entorno Python**
+
+```bash
+# Crear entorno virtual si no existe
+python -m venv .venv
+
+# Activar entorno virtual
+# Windows
+.venv\Scripts\activate
+# Linux/Mac
+source .venv/bin/activate
+
+# Instalar dependencias
+pip install -r requirements.txt
+```
+
+#### 4. **Verificar Configuración MCP**
+
+```bash
+# Revisar configuración del servidor
+cat config/server.yaml
+```
+
+#### 5. **Verificar Base de Datos**
+
+```bash
+# Generar datos si no existen
+python scripts/generate_hierarchical_apps.py
+# Verificar que la BD se creó correctamente
+ls -la data/deployments.db
+```
+
+### Proceso de Ejecución
+
+#### 🎯 Opción 1: Ejecución Automática (Recomendada)
+
+```bash
+# Script launcher que verifica todo automáticamente
+python run_enhanced_dashboard.py
+```
+
+**Salida esperada:**
+
+```console
+🔧 MCP Deployment Manager - Launcher
+==================================================
+✅ Todas las dependencias están instaladas
+✅ Base de datos encontrada:
+   - 7 aplicaciones
+   - 14 componentes  
+   - 42 versiones
+   - 111 despliegues
+✅ Dashboard mejorado encontrado
+
+🚀 Lanzando Dashboard Mejorado...
+📊 URL: http://localhost:8501
+⏹️  Para detener: Ctrl+C
+```
+
+#### 🎯 Opción 2: Ejecución Manual
+
+##### Dashboard Principal (Recomendado)
+
 ```bash
 streamlit run src/frontend/enhanced_dashboard.py --server.port 8501
 ```
 
-#### Servidor MCP (Opcional)
+##### Servidor MCP (Desarrollo)
+
 ```bash
 python -m src.mcp_server.main
 ```
 
-#### Dashboards Alternativos
+**Salida esperada:**
+
+```console
+2025-10-31T14:56:33.808815Z [info] Starting MCP Server application
+2025-10-31T14:56:33.808815Z [info] MCP server created successfully
+2025-10-31T14:56:33.914961Z [info] Tool registered successfully tool_name=list_versions
+2025-10-31T14:56:33.914961Z [info] Tool registered successfully tool_name=get_version_details
+...
+2025-10-31T14:56:33.914961Z [info] Default tools registered count=12
+2025-10-31T14:56:33.914961Z [info] MCP Server ready to accept connections
+```
+
+##### Dashboards Alternativos
+
 ```bash
 # Dashboard jerárquico básico
 streamlit run src/frontend/hierarchical_dashboard.py --server.port 8502
@@ -117,6 +215,84 @@ streamlit run src/frontend/hierarchical_dashboard.py --server.port 8502
 # Dashboard multi-aplicación (legacy)
 streamlit run src/frontend/multi_app_dashboard.py --server.port 8503
 ```
+
+### 🔍 Verificación de Funcionamiento
+
+#### Servidor MCP
+
+1. **Importación correcta de módulos:**
+
+```bash
+python -c "import src.mcp_server.server; print('✅ MCP server import successful')"
+```
+
+2. **Registro de herramientas:**
+   - Debe registrar **12 herramientas** exitosamente
+   - Herramientas de versiones: `list_versions`, `get_version_details`, `compare_versions`, `create_sample_version`
+   - Herramientas de despliegue: `register_deployment`, `update_deployment_status`, `get_deployment_history`, `get_environment_status`
+   - Herramientas básicas: `calculator`, `text_processor`, `system_info`, `echo`
+
+#### Dashboard Streamlit
+
+1. **URL de acceso:** `http://localhost:8501`
+2. **Funcionalidades a verificar:**
+   - ✅ Carga de datos desde BD
+   - ✅ Visualización de aplicaciones
+   - ✅ Gráficos interactivos
+   - ✅ Exportación PDF
+   - ✅ Formularios de edición
+
+### 🚨 Solución de Problemas Comunes
+
+#### Error: "ModuleNotFoundError"
+
+```bash
+# Verificar que el entorno virtual está activado
+which python  # Linux/Mac
+where python   # Windows
+
+# Reinstalar dependencias
+pip install -r requirements.txt
+```
+
+#### Error: "Database not found"
+
+```bash
+# Generar base de datos
+python scripts/generate_hierarchical_apps.py
+```
+
+#### Error: "Port already in use"
+
+```bash
+# Verificar procesos en puerto 8501
+lsof -i :8501  # Linux/Mac
+netstat -ano | findstr :8501  # Windows
+
+# Usar puerto alternativo
+streamlit run src/frontend/enhanced_dashboard.py --server.port 8502
+```
+
+#### Error en servidor MCP: "AsyncExitStack"
+
+- Este error es **normal** al interrumpir el servidor con Ctrl+C
+- El servidor se ejecuta correctamente antes de la interrupción
+- No afecta la funcionalidad
+
+### 📊 Estado Esperado del Sistema
+
+Una vez verificado, el sistema debe mostrar:
+
+**Base de Datos:**
+- 7 aplicaciones académicas de UNIR
+- 14 componentes (frontend + backend)
+- 42 versiones distribuidas
+- 111 despliegues en dev/pre/prod
+
+**Servicios:**
+- Dashboard Streamlit: `http://localhost:8501`
+- Servidor MCP: Puerto 8000 (opcional)
+- Base de datos SQLite: `data/deployments.db`
 
 ## 📱 Aplicaciones Incluidas
 
@@ -316,10 +492,48 @@ MCP_SERVER_VERSION=2.0.0
 
 ## 📚 Documentación Adicional
 
+### 📋 Documentación Principal
+- **[🗄️ Base de Datos](docs/DATABASE.md)** - Documentación completa del esquema, tablas y relaciones
+- **[🔍 Consultas SQL](docs/SQL_QUERIES.md)** - Consultas avanzadas, vistas y scripts de mantenimiento
 - [Guía de Usuario](docs/user-guide.md)
 - [API Reference](docs/api-reference.md)
 - [Deployment Guide](docs/deployment.md)
 - [Contributing Guidelines](docs/contributing.md)
+
+### 🗄️ Base de Datos
+El sistema utiliza **SQLite** con la siguiente estructura:
+
+| Tabla | Registros | Descripción |
+|-------|-----------|-------------|
+| `applications` | 7 | Aplicaciones principales de UNIR |
+| `application_components` | 14 | Componentes frontend/backend |
+| `versions` | 42 | Versiones con información Git |
+| `deployments` | 111 | Historial de despliegues |
+
+📖 **Documentación completa**: [docs/DATABASE.md](docs/DATABASE.md)
+
+#### 🔍 Script de Información de BD
+```bash
+# Resumen general de la base de datos
+python database_info.py summary
+
+# Estado detallado por entorno
+python database_info.py environments
+
+# Actividad reciente
+python database_info.py recent
+
+# Información completa
+python database_info.py all
+```
+
+### 🔍 Consultas SQL Útiles
+- **Dashboard Ejecutivo**: Métricas principales del sistema
+- **Análisis de Rendimiento**: Tiempo entre despliegues y frecuencia
+- **Auditoría**: Rastreo de cambios y actividad por usuario
+- **Mantenimiento**: Scripts de limpieza y optimización
+
+📖 **Consultas completas**: [docs/SQL_QUERIES.md](docs/SQL_QUERIES.md)
 
 ## 📞 Soporte
 
