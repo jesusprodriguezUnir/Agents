@@ -24,9 +24,9 @@ def create_application(
     app_type: str,
     description: str = "",
     repository_url: str = "",
-    tech_stack: List[str] = None,
+    tech_stack: Optional[List[str]] = None,
     owner_team: str = "",
-    dependencies: List[str] = None,
+    dependencies: Optional[List[str]] = None,
     health_check_url: str = ""
 ) -> ToolResult:
     """
@@ -70,13 +70,18 @@ def create_application(
         return ToolResult(
             success=True,
             message=f"Aplicación '{name}' creada exitosamente",
-            data=application.dict()
+            data=application.dict(),
+            error_code=None,
+            metadata=None
         )
         
     except Exception as e:
         return ToolResult(
             success=False,
-            message=f"Error al crear aplicación: {str(e)}"
+            message=f"Error al crear aplicación: {str(e)}",
+            data=None,
+            error_code="APPLICATION_CREATION_ERROR",
+            metadata=None
         )
 
 
