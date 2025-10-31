@@ -12,7 +12,7 @@ from uuid import uuid4
 
 from ...models.deployment import (
     Deployment, DeploymentStatus, Environment, Version, 
-    DeploymentSummary, EnvironmentStatus
+    DeploymentSummary, ApplicationEnvironmentStatus, EnvironmentOverview
 )
 from ...utils.logging import get_logger
 from ..registry import ToolRegistry
