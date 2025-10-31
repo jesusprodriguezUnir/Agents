@@ -788,8 +788,8 @@ def create_pdf_report():
         # Footer
         html_content += f"""
     <div class="footer">
-        <p>MCP Deployment Manager v2.0 | Arquitectura Jerarquica: Aplicaciones → Componentes → Versiones</p>
-        <p>UNIR - Sistema de Gestion de Despliegues</p>
+        <p>MCP Deployment Manager v2.0 | Arquitectura Jerárquica: Aplicaciones → Componentes → Versiones</p>
+        <p>UNIR - Sistema de Gestión de Despliegues</p>
     </div>
 </body>
 </html>"""
