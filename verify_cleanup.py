@@ -3,7 +3,6 @@
 Script de verificación después de eliminar gráficos
 """
 
-import sys
 import os
 
 def verify_no_graphs():
