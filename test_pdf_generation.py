@@ -3,7 +3,6 @@
 Script de prueba para verificar la generación del reporte PDF/HTML
 """
 
-import sys
 import os
 import sqlite3
 import pandas as pd
