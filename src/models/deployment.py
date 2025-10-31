@@ -24,6 +24,27 @@ class ComponentType(str, Enum):
     INFRASTRUCTURE = "infrastructure"  # Terraform, scripts
 
 
+class ApplicationType(str, Enum):
+    """Tipos de aplicación."""
+    WEB_APP = "web_app"          # Aplicación web completa
+    API = "api"                  # API REST/GraphQL
+    MICROSERVICE = "microservice"  # Microservicio
+    DESKTOP = "desktop"          # Aplicación de escritorio
+    MOBILE = "mobile"            # Aplicación móvil
+    SERVICE = "service"          # Servicio de background
+    LIBRARY = "library"          # Librería o paquete
+
+
+class Environment(str, Enum):
+    """Entornos de despliegue."""
+    DEVELOPMENT = "development"
+    TESTING = "testing"
+    STAGING = "staging"
+    PRODUCTION = "production"
+    INTEGRATION = "integration"
+    PRE_PRODUCTION = "pre_production"
+
+
 class DeploymentStatus(str, Enum):
     """Estados de despliegue."""
     PENDING = "pending"
