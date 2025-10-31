@@ -730,10 +730,10 @@ def create_pdf_report():
         </div>
         <p><strong>Funcionalidades del sistema:</strong></p>
         <ul>
-            <li>Edicion en linea de aplicaciones y componentes</li>
+            <li>Edición en línea de aplicaciones y componentes</li>
             <li>Resumen completo de entornos</li>
-            <li>Exportacion de reportes PDF</li>
-            <li>Gestion completa CRUD</li>
+            <li>Exportación de reportes PDF</li>
+            <li>Gestión completa CRUD</li>
         </ul>
     </div>
 """
