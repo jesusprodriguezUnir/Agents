@@ -1,8 +1,8 @@
 """
-Modelos de datos para gestión de despliegues y versiones.
+Modelos de datos para gestión de despliegues y versiones multi-organización.
 
-Define las estructuras de datos para aplicaciones, despliegues, versiones,
-entornos e incidencias en un ecosistema multi-aplicación.
+Define las estructuras de datos para organizaciones, entornos flexibles, aplicaciones, 
+despliegues, versiones e incidencias en un ecosistema multi-organización.
 """
 
 from datetime import datetime
@@ -11,15 +11,12 @@ from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
 
-class Environment(str, Enum):
-    """Entornos de despliegue disponibles."""
-    DEVELOPMENT = "dev"
-    PREPRODUCTION = "pre"
-    PRODUCTION = "prod"
+# ============================================================================
+# ENUMS - Definiciones de valores permitidos
+# ============================================================================
 
-
-class ApplicationType(str, Enum):
-    """Tipos de aplicación."""
+class ComponentType(str, Enum):
+    """Tipos de componente de aplicación."""
     FRONTEND = "frontend"  # Angular, React, Vue
     BACKEND = "backend"    # .NET Core API, Node.js
     MICROSERVICE = "microservice"  # Microservicios
@@ -34,6 +31,15 @@ class DeploymentStatus(str, Enum):
     SUCCESS = "success"
     FAILED = "failed"
     ROLLBACK = "rollback"
+
+
+class UrlType(str, Enum):
+    """Tipos de URL por entorno/componente."""
+    MAIN_APP = "main_app"           # URL principal de la aplicación
+    VERSION_API = "version_api"     # Endpoint para consultar versión
+    HEALTH_CHECK = "health_check"   # Endpoint de health check
+    SWAGGER = "swagger"             # Documentación Swagger/OpenAPI
+    ADMIN = "admin"                 # Panel de administración
 
 
 class IncidentSeverity(str, Enum):
