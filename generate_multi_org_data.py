@@ -5,7 +5,6 @@ Crea datos de prueba para probar el nuevo esquema con múltiples organizaciones.
 """
 
 import sqlite3
-import json
 from datetime import datetime, timedelta
 import random
 from uuid import uuid4
