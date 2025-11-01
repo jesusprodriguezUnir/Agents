@@ -704,38 +704,6 @@ def render_components_tab():
             st.info(f"No hay componentes registrados para {selected_app_name}.")
 
 
-def render_recent_deployments(org_id, env_id, days):
-    """Renderiza tabla de despliegues recientes."""
-    st.header("🚀 Despliegues Recientes")
-    
-    deployments = get_deployments_data(org_id, env_id, days)
-    
-    if deployments:
-        df = pd.DataFrame(deployments)
-        
-        # Formatear datos para la tabla
-        df['deployed_at'] = pd.to_datetime(df['deployed_at'])
-        df = df.sort_values('deployed_at', ascending=False)
-        
-        # Mostrar tabla
-        st.dataframe(
-            df[['deployed_at', 'organization', 'environment', 'application', 'component', 'version', 'status', 'deployed_by']].head(20),
-            column_config={
-                'deployed_at': 'Fecha',
-                'organization': 'Organización',
-                'environment': 'Entorno',
-                'application': 'Aplicación',
-                'component': 'Componente',
-                'version': 'Versión',
-                'status': 'Estado',
-                'deployed_by': 'Desplegado por'
-            },
-            use_container_width=True
-        )
-    else:
-        st.info("No hay despliegues recientes para mostrar.")
-
-
 def main():
     """Función principal del dashboard."""
     st.title("🚀 MCP Multi-Organization Deployment Dashboard")
