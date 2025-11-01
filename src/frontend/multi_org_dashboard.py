@@ -33,22 +33,27 @@ def get_db_connection():
 
 
 def get_organizations():
-    """Obtiene todas las organizaciones."""
+    """Obtiene todas las organizaciones, incluyendo display_name si existe."""
     with get_db_connection() as conn:
-        result = conn.execute("""
-            SELECT 
+        # Verificar si la columna display_name existe en la tabla organizations
+        columns = [row[1] for row in conn.execute("PRAGMA table_info(organizations)").fetchall()]
+        has_display_name = "display_name" in columns
+        select_display = ", o.display_name" if has_display_name else ""
+        group_display = ", o.display_name" if has_display_name else ""
+        sql = f"""
+            SELECT
                 o.id,
-                o.name,
+                o.name{select_display},
                 o.description,
                 COUNT(DISTINCT e.id) as environment_count,
                 COUNT(DISTINCT d.id) as deployment_count
             FROM organizations o
             LEFT JOIN environments e ON o.id = e.organization_id
-            LEFT JOIN deployments d ON e.id = d.environment_id
-            GROUP BY o.id, o.name, o.description
+            LEFT JOIN deployments d ON e.name = d.environment
+            GROUP BY o.id, o.name{group_display}, o.description
             ORDER BY o.name
-        """).fetchall()
-        
+        """
+        result = conn.execute(sql).fetchall()
         return [dict(row) for row in result]
 
 

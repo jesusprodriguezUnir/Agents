@@ -25,6 +25,13 @@ sys.path.insert(0, str(ROOT_DIR))
 from src.tools.registry import ToolRegistry
 from src.tools.basic_tools import register_basic_tools
 from src.utils.logging import setup_logging, get_logger
+# Funciones multi-org (consultas directas a BD) para renderizado por organización
+from src.frontend.multi_org_dashboard import (
+    get_organizations,
+    get_environments_by_org,
+    get_deployments_data,
+)
+from src.tools.deployment.multi_org_deployment_tools import register_deployment as mo_register_deployment
 
 
 # Configuración de la página
@@ -115,6 +122,45 @@ def display_header():
     st.markdown("---")
 
 
+def render_org_selector():
+    """Renderiza selector de organización en la barra lateral y guarda selección en session_state."""
+    st.sidebar.title("🏢 Organización")
+    try:
+        organizations = get_organizations()
+    except Exception:
+        organizations = []
+    # Construir opciones mostrando preferentemente `display_name` si existe
+    org_options = {"Todas las organizaciones": None}
+    id_to_label = {}
+    for org in organizations:
+        display = org.get('display_name') or org.get('description') or org.get('name')
+        # Etiqueta más legible: "Display Name (id)"
+        label = f"{display} ({org['id']})"
+        org_options[label] = org['id']
+        id_to_label[org['id']] = label
+
+    # Determinar índice por defecto usando session_state (persistir selección)
+    prev_selected_id = st.session_state.get('selected_org_id', None)
+    options_list = list(org_options.keys())
+
+    if prev_selected_id and prev_selected_id in id_to_label:
+        default_index = options_list.index(id_to_label[prev_selected_id])
+    else:
+        default_index = 0
+
+    selected_org_label = st.sidebar.selectbox(
+        "Selecciona organización:",
+        options=options_list,
+        index=default_index,
+        key="ui_selected_org_label",
+    )
+
+    # Guardar selección persistente en session_state
+    st.session_state['selected_org_id'] = org_options.get(selected_org_label)
+    st.session_state['selected_org_label'] = selected_org_label
+    return st.session_state['selected_org_id']
+
+
 def display_environment_overview():
     """Muestra el overview de todos los entornos."""
     st.header("🌍 Vista General de Entornos")
@@ -123,67 +169,58 @@ def display_environment_overview():
     if not registry:
         st.error("Error: No se pudo cargar el registro de herramientas")
         return
-    
-    # Obtener estado de cada entorno
-    environments = ["dev", "pre", "prod"]
-    env_data = {}
-    
-    try:
-        loop = asyncio.get_event_loop()
-        
-        for env in environments:
-            result = loop.run_until_complete(
-                registry.execute_tool("get_environment_status", {"environment": env})
-            )
-            
-            # Parsear resultado
-            if hasattr(result[0], 'text'):
-                data = json.loads(result[0].text)
-            else:
-                continue
-                
-            if "error" not in data:
-                env_data[env] = data
-    
-    except Exception as e:
-        st.warning(f"Algunos entornos no tienen datos aún: {str(e)}")
-    
-    # Mostrar cards de entornos
-    cols = st.columns(3)
-    
-    for i, env in enumerate(environments):
-        with cols[i]:
-            env_name = env.upper()
-            icon = "🟢" if env == "prod" else "🟡" if env == "pre" else "🔵"
-            
-            if env in env_data:
-                data = env_data[env]
-                current_version = (
-                    data.get("current_deployment", {}).get("version", "N/A")
-                    if data.get("current_deployment") else "N/A"
-                )
-                health = data.get("metrics", {}).get("health_status", "unknown")
-                success_rate = data.get("metrics", {}).get("success_rate_percentage", 0)
-                
-                # Determinar color del health status
-                health_color = "🟢" if health == "healthy" else "🟡" if health == "warning" else "🔴"
-                
-                st.markdown(f"""
-                <div class="environment-card">
-                    <h3>{icon} {env_name}</h3>
-                    <p><strong>Versión Actual:</strong> {current_version}</p>
-                    <p><strong>Estado:</strong> {health_color} {health.title()}</p>
-                    <p><strong>Success Rate:</strong> {success_rate}%</p>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.markdown(f"""
-                <div class="environment-card">
-                    <h3>{icon} {env_name}</h3>
-                    <p><strong>Estado:</strong> Sin datos</p>
-                    <p><em>Crear versiones y despliegues</em></p>
-                </div>
-                """, unsafe_allow_html=True)
+    # Obtener si hay organización seleccionada
+    selected_org = st.session_state.get('selected_org_id')
+    if selected_org:
+        # Vista por organización usando consultas directas
+        try:
+            envs = get_environments_by_org(selected_org)
+        except Exception as e:
+            st.error(f"Error obteniendo entornos para la organización: {e}")
+            return
+
+        if not envs:
+            st.info("No hay entornos configurados para la organización seleccionada.")
+            return
+
+        cols = st.columns(max(1, min(3, len(envs))))
+
+        for i, env in enumerate(envs[:3]):
+            with cols[i]:
+                env_name = env['name'].upper()
+                icon = "🟢" if env_name.lower() == "prod" else "🟡" if env_name.lower() == "pre" else "🔵"
+
+                # Obtener despliegues para este entorno y organización
+                deployments = get_deployments_data(org_id=selected_org, env_id=env['id'], days=90)
+                if deployments:
+                    sorted_deps = sorted(deployments, key=lambda d: d['deployed_at'], reverse=True)
+                    current = sorted_deps[0]
+                    current_version = current.get('version', 'N/A')
+                    total = len(deployments)
+                    successful = len([d for d in deployments if d['status'] == 'success'])
+                    success_rate = round(successful / total * 100, 2) if total > 0 else 0
+                    health = 'healthy' if success_rate >= 80 else 'warning' if success_rate >= 60 else 'critical'
+
+                    health_color = "🟢" if health == "healthy" else "🟡" if health == "warning" else "🔴"
+
+                    st.markdown(f"""
+                    <div class="environment-card">
+                        <h3>{icon} {env_name}</h3>
+                        <p><strong>Versión Actual:</strong> {current_version}</p>
+                        <p><strong>Estado:</strong> {health_color} {health.title()}</p>
+                        <p><strong>Success Rate:</strong> {success_rate}%</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown(f"""
+                    <div class="environment-card">
+                        <h3>{icon} {env_name}</h3>
+                        <p><strong>Estado:</strong> Sin datos</p>
+                        <p><em>Crear versiones y despliegues</em></p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+        return
 
 
 def display_deployment_management():
@@ -215,12 +252,28 @@ def display_new_deployment_form(registry):
     col1, col2 = st.columns(2)
     
     with col1:
-        environment = st.selectbox(
-            "Entorno de Despliegue",
-            ["dev", "pre", "prod"],
-            key="new_deploy_env"
-        )
-        
+        # Soporte multi-organización: si hay una org seleccionada usamos entornos desde la BD
+        selected_org = st.session_state.get('selected_org_id')
+        if selected_org:
+            try:
+                org_envs = get_environments_by_org(selected_org)
+                env_options = {e['name']: e['id'] for e in org_envs}
+            except Exception:
+                env_options = {"dev": "dev", "pre": "pre", "prod": "prod"}
+
+            environment_label = st.selectbox(
+                "Entorno de Despliegue",
+                options=list(env_options.keys()),
+                key="new_deploy_env_label"
+            )
+            environment = env_options[environment_label]
+        else:
+            environment = st.selectbox(
+                "Entorno de Despliegue",
+                ["dev", "pre", "prod"],
+                key="new_deploy_env"
+            )
+
         version = st.text_input(
             "Versión a Desplegar",
             placeholder="ej: 1.2.3",
@@ -251,41 +304,55 @@ def display_new_deployment_form(registry):
     with col1:
         if st.button("🚀 Iniciar Despliegue", type="primary"):
             if version and deployed_by:
-                # Primero verificar si la versión existe, si no crearla
                 try:
                     loop = asyncio.get_event_loop()
-                    
-                    # Intentar crear la versión si no existe
-                    loop.run_until_complete(
-                        registry.execute_tool("create_sample_version", {
-                            "environment": environment,
-                            "version": version,
-                            "branch": branch or "main"
-                        })
-                    )
-                    
-                    # Registrar el despliegue
-                    result = loop.run_until_complete(
-                        registry.execute_tool("register_deployment", {
-                            "environment": environment,
-                            "version": version,
-                            "deployed_by": deployed_by,
-                            "notes": notes
-                        })
-                    )
-                    
-                    # Mostrar resultado
-                    data = json.loads(result[0].text if hasattr(result[0], 'text') else result[0])
-                    
-                    if "error" in data:
-                        st.error(f"❌ Error: {data['error']}")
+
+                    selected_org = st.session_state.get('selected_org_id')
+                    if selected_org:
+                        # En modo multi-org environment guarda el id de entorno
+                        env_id = environment
+                        mo_result = loop.run_until_complete(
+                            mo_register_deployment(
+                                int(selected_org),
+                                int(env_id),
+                                version,
+                                deployed_by,
+                                notes or ""
+                            )
+                        )
+
+                        data = json.loads(mo_result)
                     else:
-                        st.success(f"✅ Despliegue iniciado: {data['deployment_id'][:8]}...")
-                        st.info(f"📝 {data['message']}")
-                        
-                        # Limpiar formulario
+                        # Intentar crear la versión si no existe (modo legacy)
+                        loop.run_until_complete(
+                            registry.execute_tool("create_sample_version", {
+                                "environment": environment,
+                                "version": version,
+                                "branch": branch or "main"
+                            })
+                        )
+
+                        # Registrar el despliegue (modo legacy)
+                        result = loop.run_until_complete(
+                            registry.execute_tool("register_deployment", {
+                                "environment": environment,
+                                "version": version,
+                                "deployed_by": deployed_by,
+                                "notes": notes
+                            })
+                        )
+
+                        data = json.loads(result[0].text if hasattr(result[0], 'text') else result[0])
+
+                    if "error" in data:
+                        st.error(f"❌ Error: {data.get('error')}")
+                    else:
+                        if data.get('deployment_id'):
+                            st.success(f"✅ Despliegue iniciado: {data['deployment_id'][:8]}...")
+                        if data.get('message'):
+                            st.info(f"📝 {data['message']}")
                         st.rerun()
-                
+
                 except Exception as e:
                     st.error(f"❌ Error iniciando despliegue: {str(e)}")
             else:
@@ -315,17 +382,31 @@ def display_deployment_history(registry):
     
     try:
         loop = asyncio.get_event_loop()
-        
-        # Parámetros para el filtro
-        params = {"limit": limit}
-        if filter_env != "Todos":
-            params["environment"] = filter_env
-        
-        result = loop.run_until_complete(
-            registry.execute_tool("get_deployment_history", params)
-        )
-        
-        data = json.loads(result[0].text if hasattr(result[0], 'text') else result[0])
+
+        # Si hay organización seleccionada, usamos consulta directa a BD
+        selected_org = st.session_state.get('selected_org_id')
+        if selected_org:
+            env_id = None
+            if filter_env != "Todos":
+                # intentar mapear nombre de entorno a id dentro de la organización
+                org_envs = get_environments_by_org(selected_org)
+                match = next((e for e in org_envs if e['name'] == filter_env), None)
+                if match:
+                    env_id = match['id']
+
+            deployments = get_deployments_data(org_id=selected_org, env_id=env_id, days=365)
+            data = {"deployments": deployments}
+        else:
+            # Parámetros para el filtro
+            params = {"limit": limit}
+            if filter_env != "Todos":
+                params["environment"] = filter_env
+
+            result = loop.run_until_complete(
+                registry.execute_tool("get_deployment_history", params)
+            )
+
+            data = json.loads(result[0].text if hasattr(result[0], 'text') else result[0])
         
         if "error" in data:
             st.error(f"❌ Error: {data['error']}")
@@ -745,6 +826,9 @@ def main():
     # Mostrar encabezado
     display_header()
     
+    # Selector de organización en la sidebar
+    render_org_selector()
+
     # Sidebar para navegación
     st.sidebar.title("🧭 Navegación")
     page = st.sidebar.selectbox(

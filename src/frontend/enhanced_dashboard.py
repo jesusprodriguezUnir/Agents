@@ -14,6 +14,9 @@ from io import BytesIO
 # Importar herramientas del dashboard
 from dashboard_tools import dashboard_tools
 
+# Importar funciones multi-org
+from multi_org_dashboard import get_organizations
+
 # Configuración de página
 st.set_page_config(
     page_title="🚀 MCP Deployment Manager - Enhanced",
@@ -99,37 +102,62 @@ def get_database_connection():
     """Obtiene conexión a la base de datos."""
     return sqlite3.connect("data/deployments.db")
 
-def load_applications():
+def load_applications(org_id=None):
     """Carga aplicaciones principales."""
     conn = get_database_connection()
-    df = pd.read_sql_query("""
-        SELECT id, name, description, owner_team, created_at
-        FROM applications 
-        ORDER BY name
-    """, conn)
+    query = """
+        SELECT DISTINCT a.id, a.name, a.description, a.owner_team, a.created_at
+        FROM applications a
+    """
+    params = []
+
+    if org_id:
+        query += """
+        JOIN application_components ac ON a.id = ac.application_id
+        JOIN deployments d ON ac.id = d.component_id
+        JOIN environments e ON d.environment = e.name
+        WHERE e.organization_id = ?
+        """
+        params.append(org_id)
+
+    query += " ORDER BY a.name"
+
+    df = pd.read_sql_query(query, conn, params=params)
     conn.close()
     return df
 
-def load_components():
+def load_components(org_id=None):
     """Carga componentes con información de aplicación."""
     conn = get_database_connection()
-    df = pd.read_sql_query("""
-        SELECT 
+    query = """
+        SELECT DISTINCT
             ac.*,
             a.name as application_name,
             a.description as application_description
         FROM application_components ac
         JOIN applications a ON ac.application_id = a.id
-        ORDER BY a.name, ac.type
-    """, conn)
+    """
+    params = []
+
+    if org_id:
+        query += """
+        JOIN deployments d ON ac.id = d.component_id
+        JOIN environments e ON d.environment = e.name
+        WHERE e.organization_id = ?
+        """
+        params.append(org_id)
+
+    query += " ORDER BY a.name, ac.type"
+
+    df = pd.read_sql_query(query, conn, params=params)
     conn.close()
     return df
 
-def load_versions():
+def load_versions(org_id=None):
     """Carga versiones con información completa."""
     conn = get_database_connection()
-    df = pd.read_sql_query("""
-        SELECT 
+    query = """
+        SELECT DISTINCT
             v.*,
             ac.name as component_name,
             ac.type as component_type,
@@ -137,16 +165,28 @@ def load_versions():
         FROM versions v
         JOIN application_components ac ON v.component_id = ac.id
         JOIN applications a ON ac.application_id = a.id
-        ORDER BY a.name, ac.type, v.created_at DESC
-    """, conn)
+    """
+    params = []
+
+    if org_id:
+        query += """
+        JOIN deployments d ON ac.id = d.component_id
+        JOIN environments e ON d.environment = e.name
+        WHERE e.organization_id = ?
+        """
+        params.append(org_id)
+
+    query += " ORDER BY a.name, ac.type, v.created_at DESC"
+
+    df = pd.read_sql_query(query, conn, params=params)
     conn.close()
     return df
 
-def load_deployments():
+def load_deployments(org_id=None):
     """Carga despliegues con información completa."""
     conn = get_database_connection()
-    df = pd.read_sql_query("""
-        SELECT 
+    query = """
+        SELECT DISTINCT
             d.*,
             v.version,
             ac.name as component_name,
@@ -156,27 +196,50 @@ def load_deployments():
         JOIN versions v ON d.version_id = v.id
         JOIN application_components ac ON d.component_id = ac.id
         JOIN applications a ON ac.application_id = a.id
-        ORDER BY d.deployed_at DESC
-    """, conn)
+    """
+    params = []
+
+    if org_id:
+        query += """
+        JOIN environments e ON d.environment = e.name
+        WHERE e.organization_id = ?
+        """
+        params.append(org_id)
+
+    query += " ORDER BY d.deployed_at DESC"
+
+    df = pd.read_sql_query(query, conn, params=params)
     conn.close()
     return df
 
-def get_environment_summary():
+def get_environment_summary(org_id=None):
     """Obtiene resumen de todos los entornos."""
     conn = get_database_connection()
-    
+
     # Obtener último despliegue exitoso por componente y entorno
-    df = pd.read_sql_query("""
+    query = """
         WITH latest_deployments AS (
-            SELECT 
+            SELECT
                 d.component_id,
                 d.environment,
                 MAX(d.deployed_at) as last_deployed
             FROM deployments d
             WHERE d.status = 'success'
+    """
+    params = []
+
+    if org_id:
+        query += """
+            AND d.environment IN (
+                SELECT name FROM environments WHERE organization_id = ?
+            )
+        """
+        params.append(org_id)
+
+    query += """
             GROUP BY d.component_id, d.environment
         )
-        SELECT 
+        SELECT
             d.environment,
             a.name as application_name,
             ac.type as component_type,
@@ -186,22 +249,32 @@ def get_environment_summary():
             d.deployed_by,
             ac.repository_url
         FROM deployments d
-        JOIN latest_deployments ld ON d.component_id = ld.component_id 
-            AND d.environment = ld.environment 
+        JOIN latest_deployments ld ON d.component_id = ld.component_id
+            AND d.environment = ld.environment
             AND d.deployed_at = ld.last_deployed
         JOIN versions v ON d.version_id = v.id
         JOIN application_components ac ON d.component_id = ac.id
         JOIN applications a ON ac.application_id = a.id
         WHERE d.status = 'success'
-        ORDER BY d.environment, a.name, ac.type
-    """, conn)
-    
+    """
+
+    if org_id:
+        query += """
+        AND d.environment IN (
+            SELECT name FROM environments WHERE organization_id = ?
+        )
+        """
+        params.append(org_id)
+
+    query += " ORDER BY d.environment, a.name, ac.type"
+
+    df = pd.read_sql_query(query, conn, params=params)
     conn.close()
     return df
 
-def get_compact_environment_summary():
+def get_compact_environment_summary(org_id=None):
     """Obtiene resumen compacto agrupado por aplicación y entorno."""
-    env_summary = get_environment_summary()
+    env_summary = get_environment_summary(org_id)
     
     if env_summary.empty:
         return {}
@@ -240,13 +313,13 @@ def get_compact_environment_summary():
     
     return compact_summary
 
-def create_executive_excel_report():
+def create_executive_excel_report(org_id=None):
     """Genera un reporte Excel ejecutivo con múltiples hojas."""
     try:
         # Obtener datos
-        compact_summary = get_compact_environment_summary()
-        apps_df = load_applications()
-        deployments_df = load_deployments()
+        compact_summary = get_compact_environment_summary(org_id)
+        apps_df = load_applications(org_id)
+        deployments_df = load_deployments(org_id)
         
         # Crear buffer de memoria para Excel
         output = BytesIO()
@@ -337,12 +410,12 @@ def create_executive_excel_report():
         st.error(f"Error generando reporte Excel: {str(e)}")
         return None
 
-def create_executive_pdf_report():
+def create_executive_pdf_report(org_id=None):
     """Genera un reporte PDF ejecutivo para dirección."""
     try:
-        compact_summary = get_compact_environment_summary()
-        apps_df = load_applications()
-        deployments_df = load_deployments()
+        compact_summary = get_compact_environment_summary(org_id)
+        apps_df = load_applications(org_id)
+        deployments_df = load_deployments(org_id)
         
         # Estadísticas ejecutivas
         total_apps = len(apps_df)
@@ -593,10 +666,10 @@ def create_executive_pdf_report():
         st.error(f"Error generando reporte PDF: {str(e)}")
         return None
 
-def create_pdf_report():
+def create_pdf_report(org_id=None):
     """Genera un reporte HTML limpio del estado de los entornos."""
     try:
-        env_summary = get_environment_summary()
+        env_summary = get_environment_summary(org_id)
         
         # Obtener estadísticas generales
         total_apps = env_summary['application_name'].nunique() if not env_summary.empty else 0
@@ -803,7 +876,32 @@ def create_pdf_report():
 def show_enhanced_overview():
     """Muestra el resumen mejorado con estado de entornos."""
     st.markdown('<div class="main-header"><h1>🎯 Resumen Ejecutivo</h1></div>', unsafe_allow_html=True)
-    
+
+    # Selector de organización
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🏢 Filtro por Organización")
+
+    try:
+        organizations = get_organizations()
+        if organizations:
+            org_options = {"Todas las organizaciones": None}
+            for org in organizations:
+                display_name = org.get('display_name') or org.get('name') or f"Org {org['id']}"
+                org_options[f"{display_name} ({org['id']})"] = org['id']
+
+            selected_org_label = st.sidebar.selectbox(
+                "Seleccionar Organización",
+                options=list(org_options.keys()),
+                key="executive_org_selector"
+            )
+            selected_org_id = org_options[selected_org_label]
+        else:
+            selected_org_id = None
+            st.sidebar.info("No hay organizaciones disponibles")
+    except Exception as e:
+        st.sidebar.error(f"Error cargando organizaciones: {e}")
+        selected_org_id = None
+
     # Botones para generar reportes
     st.markdown("### 📊 Reportes Ejecutivos")
     
@@ -811,7 +909,7 @@ def show_enhanced_overview():
     
     with col1:
         if st.button("📄 Reporte PDF Ejecutivo", key="executive_pdf_button"):
-            html_report = create_executive_pdf_report()
+            html_report = create_executive_pdf_report(selected_org_id)
             if html_report:
                 st.success("✅ Reporte ejecutivo generado")
                 st.download_button(
@@ -824,7 +922,7 @@ def show_enhanced_overview():
     
     with col2:
         if st.button("📊 Reporte Excel", key="excel_button"):
-            excel_report = create_executive_excel_report()
+            excel_report = create_executive_excel_report(selected_org_id)
             if excel_report:
                 st.success("✅ Reporte Excel generado")
                 st.download_button(
@@ -837,7 +935,7 @@ def show_enhanced_overview():
     
     with col3:
         if st.button("📋 Reporte HTML Técnico", key="technical_pdf_button"):
-            html_report = create_pdf_report()
+            html_report = create_pdf_report(selected_org_id)
             if html_report:
                 st.success("✅ Reporte técnico generado")
                 st.download_button(
@@ -849,10 +947,10 @@ def show_enhanced_overview():
                 )
     
     # Métricas principales
-    apps_df = load_applications()
-    components_df = load_components()
-    versions_df = load_versions()
-    deployments_df = load_deployments()
+    apps_df = load_applications(selected_org_id)
+    components_df = load_components(selected_org_id)
+    versions_df = load_versions(selected_org_id)
+    deployments_df = load_deployments(selected_org_id)
     
     col1, col2, col3, col4 = st.columns(4)
     
@@ -871,7 +969,7 @@ def show_enhanced_overview():
     # Resumen por entornos
     st.markdown("## 🌍 Estado Actual de Entornos")
     
-    compact_summary = get_compact_environment_summary()
+    compact_summary = get_compact_environment_summary(selected_org_id)
     
     if compact_summary:
         col1, col2, col3 = st.columns(3)
