@@ -12,7 +12,6 @@ from uuid import uuid4
 
 from ...models.multi_org_models import Organization, Environment, EnvironmentUrl
 from ...utils.logging import get_logger
-from ..registry import ToolRegistry
 
 logger = get_logger(__name__)
 
