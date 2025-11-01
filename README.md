@@ -20,7 +20,7 @@ Sistema avanzado de gestión de despliegues basado en Model Context Protocol (MC
 - **Edición en línea**: Formularios de edición integrados
 
 ### 🛠️ Tecnologías Utilizadas
-- **Backend**: Python 3.9+, MCP Protocol, SQLite
+- **Backend**: Python 3.10+, MCP Protocol, SQLite
 - **Frontend**: Streamlit, Plotly, HTML/CSS
 - **Base de Datos**: SQLite con estructura normalizada
 - **Deployment**: Docker ready, Railway/Render compatible
@@ -66,7 +66,7 @@ config/                 # Configuraciones
 ## 🚀 Instalación y Configuración
 
 ### Prerrequisitos
-- Python 3.9 o superior
+- Python 3.10 o superior
 - Git
 - Entorno virtual (recomendado)
 

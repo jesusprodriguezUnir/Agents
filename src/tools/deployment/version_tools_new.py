@@ -5,9 +5,8 @@ Proporciona funcionalidades para crear, listar y comparar versiones
 de aplicaciones específicas en diferentes entornos.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Optional
 from datetime import datetime
-import uuid
 
 from ...models.deployment import Version, GitCommit, ChangeLog, Application
 from ...schemas.tools import ToolResult
@@ -24,9 +23,9 @@ def create_application(
     app_type: str,
     description: str = "",
     repository_url: str = "",
-    tech_stack: List[str] = None,
+    tech_stack: Optional[List[str]] = None,
     owner_team: str = "",
-    dependencies: List[str] = None,
+    dependencies: Optional[List[str]] = None,
     health_check_url: str = ""
 ) -> ToolResult:
     """
@@ -76,7 +75,8 @@ def create_application(
     except Exception as e:
         return ToolResult(
             success=False,
-            message=f"Error al crear aplicación: {str(e)}"
+            message=f"Error al crear aplicación: {str(e)}",
+            error_code="APPLICATION_CREATION_ERROR"
         )
 
 

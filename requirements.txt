@@ -1,5 +1,5 @@
 # Core MCP and web framework dependencies
-mcp==1.0.0
+mcp>=1.0.0
 streamlit>=1.51.0
 pydantic>=2.5.0
 pydantic-settings>=2.1.0
