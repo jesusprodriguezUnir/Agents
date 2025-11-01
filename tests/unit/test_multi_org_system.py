@@ -99,7 +99,6 @@ class TestDatabaseIntegrity:
     
     def test_sqlite_available(self):
         """Test que SQLite está disponible."""
-        import sqlite3
         # Crear base de datos en memoria
         conn = sqlite3.connect(':memory:')
         cursor = conn.cursor()
