@@ -12,7 +12,6 @@ IMPORTANTE: Ejecutar backup antes de usar este script.
 
 import sqlite3
 import shutil
-import os
 from datetime import datetime
 from pathlib import Path
 import json
