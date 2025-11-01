@@ -489,7 +489,7 @@ def main():
     response = input("¿Continuar con la migración? (s/N): ").lower().strip()
     if response not in ['s', 'sí', 'si', 'yes', 'y']:
         print("❌ Migración cancelada")
-        return
+        return 0
     
     try:
         migration = DatabaseMigration()
