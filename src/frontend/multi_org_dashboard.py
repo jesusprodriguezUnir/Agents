@@ -8,7 +8,6 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import json
 from typing import Dict, List, Any
